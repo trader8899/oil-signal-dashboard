@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oil Physical Signal Dashboard</title>
+<style>
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --surface2:  #1c2230;
+    --border:    #2a3441;
+    --text:      #e6edf3;
+    --muted:     #7d8ea3;
+    --accent:    #1a7f37;
+
+    --green:     #1a7f37;
+    --green-bg:  #0d2e18;
+    --green-txt: #3fb950;
+
+    --yellow:    #9a6800;
+    --yellow-bg: #2d2200;
+    --yellow-txt:#e3b341;
+
+    --orange:    #b25000;
+    --orange-bg: #321500;
+    --orange-txt:#f0883e;
+
+    --red:       #8d1a1a;
+    --red-bg:    #2d0d0d;
+    --red-txt:   #f85149;
+
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* ── HEADER ─────────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header-left h1 {
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .header-left h1 span { color: var(--green-txt); }
+  .header-left .subtitle {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 3px;
+    font-style: italic;
+  }
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .last-updated {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .refresh-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .refresh-btn:hover { background: var(--border); border-color: #4a5568; }
+
+  /* ── SECTION LABELS ─────────────────────────────── */
+  .section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    padding-left: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── GRID HELPERS ───────────────────────────────── */
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .mb-24  { margin-bottom: 24px; }
+  .mb-16  { margin-bottom: 16px; }
+
+  /* ── CARD BASE ──────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+  }
+  .card-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .card-value {
+    font-size: 2.4rem;
+    font-weight: 800;
+    font-family: var(--mono);
+    line-height: 1;
+    color: var(--text);
+  }
+  .card-sub {
+    font-size: 0.76rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* ── HERO SPREAD CARD ───────────────────────────── */
+  .spread-card {
+    border-width: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .spread-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--spread-bar, #3fb950);
+    border-radius: 10px 10px 0 0;
+  }
+  .spread-card .card-value {
+    font-size: 3.2rem;
+  }
+  .spread-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-top: 10px;
+  }
+
+  /* Signal colour states */
+  .state-normal    { --c-bg: var(--green-bg);  --c-txt: var(--green-txt);  border-color: var(--green-txt) !important;  --spread-bar: var(--green-txt);  }
+  .state-mild      { --c-bg: var(--yellow-bg); --c-txt: var(--yellow-txt); border-color: var(--yellow-txt) !important; --spread-bar: var(--yellow-txt); }
+  .state-meaningful{ --c-bg: var(--yellow-bg); --c-txt: var(--yellow-txt); border-color: var(--yellow-txt) !important; --spread-bar: var(--yellow-txt); }
+  .state-strong    { --c-bg: var(--orange-bg); --c-txt: var(--orange-txt); border-color: var(--orange-txt) !important; --spread-bar: var(--orange-txt); }
+  .state-regime    { --c-bg: var(--red-bg);    --c-txt: var(--red-txt);    border-color: var(--red-txt) !important;    --spread-bar: var(--red-txt);    }
+
+  .state-normal .card-value,
+  .state-normal .card-label   { color: var(--green-txt); }
+  .state-mild .card-value,
+  .state-mild .card-label     { color: var(--yellow-txt); }
+  .state-meaningful .card-value,
+  .state-meaningful .card-label { color: var(--yellow-txt); }
+  .state-strong .card-value,
+  .state-strong .card-label   { color: var(--orange-txt); }
+  .state-regime .card-value,
+  .state-regime .card-label   { color: var(--red-txt); }
+
+  .spread-badge { background: var(--c-bg, var(--green-bg)); color: var(--c-txt, var(--green-txt)); }
+
+  /* ── EDITABLE FIELD ─────────────────────────────── */
+  .editable-value {
+    font-size: 2.4rem;
+    font-weight: 800;
+    font-family: var(--mono);
+    background: transparent;
+    border: none;
+    border-bottom: 2px dashed var(--border);
+    color: var(--muted);
+    width: 100%;
+    outline: none;
+    padding: 0;
+    line-height: 1;
+    cursor: text;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .editable-value:focus {
+    border-color: var(--green-txt);
+    color: var(--text);
+  }
+  .editable-value::placeholder { color: #3a4a5a; }
+
+  .editable-small {
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: var(--mono);
+    background: transparent;
+    border: none;
+    border-bottom: 2px dashed var(--border);
+    color: var(--muted);
+    width: 100%;
+    outline: none;
+    padding: 2px 0;
+    cursor: text;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .editable-small:focus { border-color: var(--green-txt); color: var(--text); }
+  .editable-small::placeholder { color: #3a4a5a; }
+
+  /* ── FOUR-FOR-FOUR ──────────────────────────────── */
+  .check-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .check-item + .check-item { margin-top: 8px; }
+  .check-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+  .check-yes  { background: var(--green-bg);  color: var(--green-txt);  border: 2px solid var(--green-txt); }
+  .check-no   { background: var(--surface2);  color: var(--muted);      border: 2px solid var(--border); }
+  .check-warn { background: var(--orange-bg); color: var(--orange-txt); border: 2px solid var(--orange-txt); }
+  .check-unknown { background: var(--surface2); color: var(--muted);    border: 2px solid var(--border); }
+
+  .check-text { flex: 1; }
+  .check-title { font-size: 0.9rem; font-weight: 600; }
+  .check-thresh { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .check-status { font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+
+  .check-item.is-yes  { border-color: #1a7f3740; background: #0d2e1810; }
+  .check-item.is-warn { border-color: #b2500040; background: #32150010; }
+  .check-item.is-no   { border-color: var(--border); }
+
+  /* ── SCORE BOX ──────────────────────────────────── */
+  .score-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .score-num {
+    font-size: 4rem;
+    font-weight: 900;
+    font-family: var(--mono);
+    line-height: 1;
+  }
+  .score-label { font-size: 0.75rem; color: var(--muted); margin-top: 6px; letter-spacing: 1px; text-transform: uppercase; }
+  .score-sub   { font-size: 0.72rem; color: var(--muted); margin-top: 8px; }
+  .score-4 { color: var(--red-txt); }
+  .score-3 { color: var(--orange-txt); }
+  .score-2 { color: var(--yellow-txt); }
+  .score-1 { color: var(--yellow-txt); }
+  .score-0 { color: var(--green-txt); }
+
+  /* ── SPREAD INTERPRETATION TABLE ───────────────── */
+  .interp-table { width: 100%; border-collapse: collapse; }
+  .interp-table tr { border-bottom: 1px solid var(--border); }
+  .interp-table tr:last-child { border-bottom: none; }
+  .interp-table td { padding: 10px 14px; font-size: 0.84rem; }
+  .interp-table td:first-child {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    width: 90px;
+  }
+  .row-normal  td { color: var(--green-txt); }
+  .row-mild    td { color: var(--yellow-txt); }
+  .row-meaningful td { color: var(--yellow-txt); }
+  .row-strong  td { color: var(--orange-txt); }
+  .row-regime  td { color: var(--red-txt); }
+  .row-normal  td:last-child  { color: var(--muted); font-size: 0.78rem; }
+  .row-mild    td:last-child  { color: var(--muted); font-size: 0.78rem; }
+  .row-meaningful td:last-child { color: var(--muted); font-size: 0.78rem; }
+  .row-strong  td:last-child  { color: var(--muted); font-size: 0.78rem; }
+  .row-regime  td:last-child  { color: var(--muted); font-size: 0.78rem; }
+  .row-current td { background: var(--red-bg) !important; }
+  .row-current td:first-child { color: var(--red-txt); }
+  .row-current td:nth-child(2) { color: var(--red-txt); font-weight: 700; }
+
+  /* ── TIMELINE ───────────────────────────────────── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item {
+    display: flex;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+    width: 52px;
+  }
+  .tl-day {
+    font-size: 0.68rem;
+    font-weight: 800;
+    font-family: var(--mono);
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 5px;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .tl-text { font-size: 0.82rem; color: var(--text); line-height: 1.4; padding-top: 2px; }
+  .tl-text strong { color: var(--orange-txt); font-size: 0.75rem; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── STATUS PILL ────────────────────────────────── */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .pill-green  { background: var(--green-bg);  color: var(--green-txt);  border: 1px solid var(--green-txt); }
+  .pill-red    { background: var(--red-bg);    color: var(--red-txt);    border: 1px solid var(--red-txt); }
+  .pill-orange { background: var(--orange-bg); color: var(--orange-txt); border: 1px solid var(--orange-txt); }
+  .pill-yellow { background: var(--yellow-bg); color: var(--yellow-txt); border: 1px solid var(--yellow-txt); }
+  .pill-muted  { background: var(--surface2);  color: var(--muted);      border: 1px solid var(--border); }
+
+  /* ── WAR RISK SELECT ────────────────────────────── */
+  .war-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-family: var(--font);
+    width: 100%;
+    margin-top: 6px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .war-select:focus { border-color: var(--green-txt); }
+
+  /* ── ALERT BANNER ───────────────────────────────── */
+  .alert-banner {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    transition: all 0.3s;
+  }
+  .alert-icon { font-size: 1.6rem; flex-shrink: 0; }
+  .alert-main { flex: 1; }
+  .alert-title { font-size: 1rem; font-weight: 700; }
+  .alert-body  { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+  .alert-score-pill {
+    font-size: 1.4rem;
+    font-weight: 900;
+    font-family: var(--mono);
+    padding: 6px 16px;
+    border-radius: 8px;
+    line-height: 1;
+  }
+
+  .alert-regime { background: var(--red-bg); border-color: var(--red-txt); }
+  .alert-regime .alert-title { color: var(--red-txt); }
+  .alert-regime .alert-score-pill { background: #4a0a0a; color: var(--red-txt); }
+
+  .alert-strong { background: var(--orange-bg); border-color: var(--orange-txt); }
+  .alert-strong .alert-title { color: var(--orange-txt); }
+  .alert-strong .alert-score-pill { background: #4a2000; color: var(--orange-txt); }
+
+  .alert-normal { background: var(--green-bg); border-color: var(--green-txt); }
+  .alert-normal .alert-title { color: var(--green-txt); }
+  .alert-normal .alert-score-pill { background: #0d3a1a; color: var(--green-txt); }
+
+  /* ── CONFIRMING CARDS ───────────────────────────── */
+  .conf-card .card-value-sm {
+    font-size: 1.8rem;
+    font-weight: 800;
+    font-family: var(--mono);
+    line-height: 1;
+    margin-top: 6px;
+  }
+  .conf-card .status-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  /* ── NOTES ──────────────────────────────────────── */
+  .notes-area {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 0.82rem;
+    padding: 10px 14px;
+    border-radius: 8px;
+    width: 100%;
+    resize: vertical;
+    min-height: 72px;
+    outline: none;
+    margin-top: 8px;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+  .notes-area:focus { border-color: var(--green-txt); }
+  .notes-area::placeholder { color: #3a4a5a; }
+
+  /* ── FOOTER ─────────────────────────────────────── */
+  .footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  /* ── RESPONSIVE ─────────────────────────────────── */
+  @media (max-width: 900px) {
+    .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .grid-3, .grid-4, .grid-2 { grid-template-columns: 1fr; }
+    body { padding: 14px; }
+    .card-value { font-size: 2rem; }
+    .spread-card .card-value { font-size: 2.4rem; }
+  }
+
+  /* ── TOOLTIP ─────────────────────────────────────── */
+  [title] { cursor: help; }
+
+  /* ── SAVE INDICATOR ─────────────────────────────── */
+  .save-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green-txt);
+    margin-left: 6px;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .save-dot.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-left">
+    <h1>⛽ Oil <span>Physical Signal</span> Dashboard</h1>
+    <div class="subtitle">Physical vs. Paper divergence monitor · Dated Brent vs. ICE Front-Month · April 2026</div>
+  </div>
+  <div class="header-right">
+    <div class="last-updated" id="lastUpdated">Last updated: —</div>
+    <button class="refresh-btn" onclick="recalcAll()">↻ Recalculate<span class="save-dot" id="saveDot"></span></button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ALERT BANNER
+══════════════════════════════════════════════════ -->
+<div class="alert-banner alert-regime mb-24" id="alertBanner">
+  <div class="alert-icon" id="alertIcon">🔴</div>
+  <div class="alert-main">
+    <div class="alert-title" id="alertTitle">REGIME CHANGE — Structural Supply Disruption</div>
+    <div class="alert-body" id="alertBody">Physical market is pricing severe supply stress. Spread at $35.00 — unprecedented in ~40 years. All four confirmation indicators active.</div>
+  </div>
+  <div class="alert-score-pill" id="alertScorePill">4/4</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     CORE SIGNAL — 3 HERO METRIC CARDS
+══════════════════════════════════════════════════ -->
+<div class="section-label mb-16">Core Signal</div>
+<div class="grid-3 mb-24">
+
+  <!-- Brent Spot -->
+  <div class="card">
+    <div class="card-label">EIA Brent Spot $/bbl</div>
+    <input class="editable-value" id="brentSpot" type="number" step="0.01"
+           placeholder="e.g. 144.42" value="144.42"
+           title="Dated Brent proxy. Source: EIA series RBRTE"
+           oninput="recalcAll()">
+    <div class="card-sub">Dated Brent proxy · EIA RBRTE · 1–2 day lag</div>
+    <div style="margin-top:10px">
+      <span class="pill pill-muted" style="font-size:0.65rem">📡 EIA RBRTE</span>
+    </div>
+  </div>
+
+  <!-- Brent Futures -->
+  <div class="card">
+    <div class="card-label">ICE Brent Futures $/bbl</div>
+    <input class="editable-value" id="brentFutures" type="number" step="0.01"
+           placeholder="Enter manually →" value="109.00"
+           title="Front-month ICE Brent. Manual entry from TradingView UKOIL or Barchart."
+           oninput="recalcAll()">
+    <div class="card-sub">Paper market · Manual entry each Monday</div>
+    <div style="margin-top:10px">
+      <span class="pill pill-muted" style="font-size:0.65rem">✏️ TradingView: UKOIL</span>
+    </div>
+  </div>
+
+  <!-- Spread (calculated) -->
+  <div class="card spread-card state-regime" id="spreadCard">
+    <div class="card-label" id="spreadLabel">Physical − Paper Spread</div>
+    <div class="card-value" id="spreadValue">$35.00</div>
+    <div class="spread-badge" id="spreadBadge">🔴 REGIME CHANGE</div>
+    <div class="card-sub" id="spreadSub" style="margin-top:8px">Normal range: $0–$3 · Above $20 = regime change</div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     CONFIRMING INDICATORS
+══════════════════════════════════════════════════ -->
+<div class="section-label mb-16">Confirming Indicators</div>
+<div class="grid-4 mb-24">
+
+  <!-- BDTI -->
+  <div class="card conf-card">
+    <div class="card-label">BDTI</div>
+    <div class="card-sub" style="margin-bottom:6px">Baltic Dirty Tanker Index</div>
+    <input class="editable-small" id="bdtiVal" type="number" step="1"
+           placeholder="e.g. 2200" value="2200"
+           title="Source: investing.com/indices/baltic-dirty-tanker or cnbc.com/quotes/.BAID"
+           oninput="recalcAll()">
+    <div class="status-line">
+      <span class="pill pill-muted" style="font-size:0.65rem; margin-top:8px">✏️ Manual weekly</span>
+      <span class="pill pill-red" id="bdtiPill" style="margin-top:8px">ELEVATED</span>
+    </div>
+    <div class="card-sub" style="margin-top:8px">Alert: > 2× 90-day avg</div>
+  </div>
+
+  <!-- Diesel Crack Spread -->
+  <div class="card conf-card">
+    <div class="card-label">Diesel Crack Spread</div>
+    <div class="card-sub" style="margin-bottom:6px">NY Harbor ULSD · $/bbl</div>
+    <div class="editable-small" id="crackVal" style="color: var(--text); cursor: default; font-family: var(--mono); font-size:1.3rem; font-weight:700; padding: 2px 0; border-bottom: 1px solid var(--border);">—</div>
+    <div class="status-line">
+      <span class="pill pill-muted" style="font-size:0.65rem; margin-top:8px">⚡ Auto-calculated</span>
+      <span class="pill pill-red" id="crackPill" style="margin-top:8px">—</span>
+    </div>
+    <div class="card-sub" style="margin-top:8px">Alert: > $30/bbl · EIA ULSD series</div>
+    <input type="hidden" id="ulsdVal">
+    <!-- ULSD entry for crack calc -->
+    <div style="margin-top:10px">
+      <div class="card-label" style="margin-bottom:4px">ULSD $/gal (for auto-calc)</div>
+      <input class="editable-small" id="ulsdInput" type="number" step="0.001"
+             placeholder="e.g. 3.80" value="3.80"
+             title="EIA series EER_EPD2DXL0_PF4_Y35NY_DPG. Crack = (ULSD×42) − Brent"
+             oninput="recalcAll()" style="font-size:0.95rem">
+    </div>
+  </div>
+
+  <!-- War Risk Status -->
+  <div class="card conf-card">
+    <div class="card-label">War Risk Status</div>
+    <div class="card-sub" style="margin-bottom:6px">Lloyd's / JWC zone</div>
+    <select class="war-select" id="warRiskStatus" onchange="recalcAll()">
+      <option value="Normal">Normal</option>
+      <option value="Elevated" selected>Elevated</option>
+      <option value="Withdrawn">Withdrawn</option>
+      <option value="Unavailable">Unavailable / Unknown</option>
+    </select>
+    <div class="status-line" style="margin-top:10px">
+      <span class="pill pill-muted" style="font-size:0.65rem">✏️ Manual check</span>
+      <span class="pill pill-red" id="warPill">ELEVATED</span>
+    </div>
+    <div class="card-sub" style="margin-top:8px">Reuters · lloydslist.com · lmalloyds.com</div>
+  </div>
+
+  <!-- War Risk Rate -->
+  <div class="card conf-card">
+    <div class="card-label">War Risk Rate</div>
+    <div class="card-sub" style="margin-bottom:6px">% of hull value (from news)</div>
+    <input class="editable-small" id="warRateVal" type="text"
+           placeholder="e.g. 2.5%"
+           title="Rate quoted in insurance news articles. Indicative range, not a live quote."
+           oninput="recalcAll()">
+    <div class="status-line">
+      <span class="pill pill-muted" style="font-size:0.65rem; margin-top:8px">✏️ From news</span>
+    </div>
+    <div class="card-sub" style="margin-top:8px">insurancejournal.com · lloydslist.com</div>
+    <div style="margin-top:10px">
+      <div class="card-label" style="margin-bottom:4px">Notes</div>
+      <textarea class="notes-area" id="warNotes" rows="2" placeholder="e.g. JWC Hormuz zone notice issued..."></textarea>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     FOUR-FOR-FOUR + SPREAD TABLE + TIMELINE
+══════════════════════════════════════════════════ -->
+<div class="grid-2 mb-24" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+
+  <!-- Left: Four-for-Four -->
+  <div>
+    <div class="section-label mb-16">Four-for-Four Confirmation</div>
+    <div class="check-card" id="checkCard">
+
+      <div class="check-item" id="check1">
+        <div class="check-dot check-yes" id="dot1">✓</div>
+        <div class="check-text">
+          <div class="check-title">Spread > $10/bbl</div>
+          <div class="check-thresh">Physical vs. paper divergence</div>
+        </div>
+        <div class="check-status" id="stat1" style="color: var(--green-txt)">$35.00 ✓</div>
+      </div>
+
+      <div class="check-item" id="check2">
+        <div class="check-dot check-yes" id="dot2">✓</div>
+        <div class="check-text">
+          <div class="check-title">BDTI > 2× 90-day avg</div>
+          <div class="check-thresh">Tanker freight elevated</div>
+        </div>
+        <div class="check-status" id="stat2" style="color: var(--green-txt)">Elevated ✓</div>
+      </div>
+
+      <div class="check-item" id="check3">
+        <div class="check-dot check-yes" id="dot3">✓</div>
+        <div class="check-text">
+          <div class="check-title">Diesel crack > $30/bbl</div>
+          <div class="check-thresh">Refinery margin elevated</div>
+        </div>
+        <div class="check-status" id="stat3" style="color: var(--green-txt)">$—</div>
+      </div>
+
+      <div class="check-item" id="check4">
+        <div class="check-dot check-yes" id="dot4">✓</div>
+        <div class="check-text">
+          <div class="check-title">War Risk: Elevated / Withdrawn</div>
+          <div class="check-thresh">Insurance market pricing real risk</div>
+        </div>
+        <div class="check-status" id="stat4" style="color: var(--green-txt)">Elevated ✓</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right: Spread Interpretation + Score -->
+  <div>
+    <div class="section-label mb-16">Spread Interpretation</div>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <table class="interp-table">
+        <tbody>
+          <tr class="row-normal">
+            <td>$0 – $3</td>
+            <td><strong>Normal</strong></td>
+            <td>Markets aligned</td>
+          </tr>
+          <tr class="row-mild">
+            <td>$3 – $5</td>
+            <td><strong>Mild divergence</strong></td>
+            <td>Monitor closely</td>
+          </tr>
+          <tr class="row-meaningful">
+            <td>$5 – $10</td>
+            <td><strong>Meaningful signal</strong></td>
+            <td>Investigate confirming indicators</td>
+          </tr>
+          <tr class="row-strong">
+            <td>$10 – $20</td>
+            <td><strong>Strong signal</strong></td>
+            <td>Physical stress evident — begin positioning</td>
+          </tr>
+          <tr class="row-regime row-current" id="currentSpreadRow">
+            <td>$20+</td>
+            <td><strong>🔴 REGIME CHANGE</strong></td>
+            <td>Structural supply disruption · Now: $35</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Score box -->
+    <div class="score-box" style="margin-top: 16px;" id="scoreBox">
+      <div class="score-num score-4" id="scoreNum">4/4</div>
+      <div class="score-label">Confirmation Score</div>
+      <div class="score-sub" id="scoreSub">All signals active — high-confidence structural disruption</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     60-DAY TRANSMISSION LAG
+══════════════════════════════════════════════════ -->
+<div class="section-label mb-16">60-Day Transmission Lag — Cascade Timeline</div>
+<div class="card mb-24">
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-marker"><span class="tl-day">Day 0</span></div>
+      <div class="tl-text"><strong>Physical crude spike</strong>Dated Brent diverges from futures. Supply stress enters the system.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-marker"><span class="tl-day">15–30</span></div>
+      <div class="tl-text"><strong>Refined product prices</strong>Diesel, gasoline, and jet fuel prices increase at wholesale level.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-marker"><span class="tl-day">30–45</span></div>
+      <div class="tl-text"><strong>Freight surcharges renegotiated</strong>Shipping contracts repriced. Logistics costs propagate into supply chains.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-marker"><span class="tl-day">45–60</span></div>
+      <div class="tl-text"><strong>Industrial input costs</strong>Manufacturing margins compress. Input cost inflation feeds through producer prices.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-marker"><span class="tl-day">60–90</span></div>
+      <div class="tl-text"><strong>Consumer prices spike</strong>Cumulative impact appears in CPI prints. Inflation surprises to the upside.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-marker"><span class="tl-day">90–180</span></div>
+      <div class="tl-text"><strong>Central bank response</strong>Rate expectations shift. Bond markets re-price inflation path. CB guidance changes.</div>
+    </div>
+  </div>
+  <div style="margin-top: 14px; padding: 10px 14px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border);">
+    <span style="font-size:0.78rem; color: var(--orange-txt); font-weight: 700;">⏱ Positioning window: </span>
+    <span style="font-size:0.78rem; color: var(--muted);">Physical signal gives ~2–3 months before the cascade appears in official CPI/PPI data.</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     DATA SOURCES + FOOTER
+══════════════════════════════════════════════════ -->
+<div class="section-label mb-16">Data Sources &amp; Links</div>
+<div class="grid-3 mb-24" style="grid-template-columns: repeat(3, 1fr);">
+  <div class="card" style="font-size:0.8rem; line-height:1.8;">
+    <div class="card-label" style="margin-bottom:8px">EIA Brent Spot (Auto)</div>
+    <a href="https://www.eia.gov/dnav/pet/hist/rbrted.htm" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">📊 EIA Brent Spot page ↗</a>
+    <a href="https://api.eia.gov/series/?api_key=DEMO_KEY&series_id=RBRTE&num=30" target="_blank" style="color: var(--muted); font-size:0.7rem; font-family: var(--mono); text-decoration:none; word-break:break-all; display:block; margin-top:4px">api.eia.gov · Series: RBRTE</a>
+  </div>
+  <div class="card" style="font-size:0.8rem; line-height:1.8;">
+    <div class="card-label" style="margin-bottom:8px">Brent Futures (Manual)</div>
+    <a href="https://www.tradingview.com/chart/?symbol=UKOIL" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">📈 TradingView: UKOIL ↗</a>
+    <a href="https://www.barchart.com/futures/quotes/CB*0/overview" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">📈 Barchart: CB*0 ↗</a>
+    <div style="color: var(--muted); font-size:0.72rem; margin-top:4px">Enter front-month settle each Monday</div>
+  </div>
+  <div class="card" style="font-size:0.8rem; line-height:1.8;">
+    <div class="card-label" style="margin-bottom:8px">BDTI + War Risk (Manual)</div>
+    <a href="https://www.investing.com/indices/baltic-dirty-tanker" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">🚢 BDTI: investing.com ↗</a>
+    <a href="https://www.lloydslist.com" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">⚓ Lloyd's List (war risk) ↗</a>
+    <a href="https://www.lmalloyds.com" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">⚓ LMA: JWC Listed Areas ↗</a>
+  </div>
+</div>
+
+<div class="footer">
+  <div>Oil Physical Signal Dashboard · Dashboard concept: The Crude Reality, Substack · Apr 2026 · Free public data only</div>
+  <div>EIA RBRTE · ICE Brent (manual) · Baltic Exchange BDTI · Lloyd's JWC</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT — recalcAll()
+══════════════════════════════════════════════════ -->
+<script>
+function recalcAll() {
+  const spot    = parseFloat(document.getElementById('brentSpot').value) || null;
+  const futures = parseFloat(document.getElementById('brentFutures').value) || null;
+  const ulsd    = parseFloat(document.getElementById('ulsdInput').value) || null;
+  const bdti    = parseFloat(document.getElementById('bdtiVal').value) || null;
+  const war     = document.getElementById('warRiskStatus').value;
+
+  // ── Spread ──────────────────────────────────────
+  const spread  = (spot !== null && futures !== null) ? +(spot - futures).toFixed(2) : null;
+  const spreadState = getSpreadState(spread);
+
+  const spreadCard = document.getElementById('spreadCard');
+  spreadCard.className = 'card spread-card ' + spreadState.cls;
+  document.getElementById('spreadValue').textContent = spread !== null ? '$' + spread.toFixed(2) : '—';
+  document.getElementById('spreadBadge').textContent = spreadState.badge;
+  document.getElementById('spreadLabel').textContent = 'Physical − Paper Spread';
+
+  // ── Crack spread ─────────────────────────────────
+  const crack = (ulsd !== null && spot !== null) ? +((ulsd * 42) - spot).toFixed(2) : null;
+  document.getElementById('crackVal').textContent = crack !== null ? '$' + crack.toFixed(2) : '—';
+  const crackPill = document.getElementById('crackPill');
+  if (crack === null)       { crackPill.className = 'pill pill-muted'; crackPill.textContent = '—'; }
+  else if (crack >= 40)     { crackPill.className = 'pill pill-red';    crackPill.textContent = 'EXTREME'; }
+  else if (crack >= 30)     { crackPill.className = 'pill pill-orange'; crackPill.textContent = 'ELEVATED'; }
+  else if (crack >= 15)     { crackPill.className = 'pill pill-yellow'; crackPill.textContent = 'NORMAL-HIGH'; }
+  else                      { crackPill.className = 'pill pill-green';  crackPill.textContent = 'LOW'; }
+
+  // ── BDTI pill ────────────────────────────────────
+  const bdtiPill = document.getElementById('bdtiPill');
+  if (bdti === null)   { bdtiPill.className = 'pill pill-muted';   bdtiPill.textContent = 'Enter value'; }
+  else if (bdti > 900) { bdtiPill.className = 'pill pill-red';     bdtiPill.textContent = 'ELEVATED'; }
+  else if (bdti > 600) { bdtiPill.className = 'pill pill-orange';  bdtiPill.textContent = 'MODERATE'; }
+  else                 { bdtiPill.className = 'pill pill-green';   bdtiPill.textContent = 'NORMAL'; }
+
+  // ── War risk pill ────────────────────────────────
+  const warPill = document.getElementById('warPill');
+  if (war === 'Elevated')   { warPill.className = 'pill pill-orange'; warPill.textContent = 'ELEVATED'; }
+  else if (war === 'Withdrawn') { warPill.className = 'pill pill-red';    warPill.textContent = 'WITHDRAWN'; }
+  else if (war === 'Normal'){ warPill.className = 'pill pill-green';  warPill.textContent = 'NORMAL'; }
+  else                      { warPill.className = 'pill pill-muted';  warPill.textContent = 'UNKNOWN'; }
+
+  // ── Four-for-four checks ─────────────────────────
+  let score = 0;
+
+  // Check 1: Spread > $10
+  const c1 = spread !== null && spread > 10;
+  setCheck('check1', 'dot1', 'stat1', c1,
+    c1 ? `$${spread.toFixed(2)} ✓` : (spread !== null ? `$${spread.toFixed(2)} ✗` : '— enter prices'),
+    spread === null);
+
+  // Check 2: BDTI elevated (manual confirm checkbox)
+  const bdtiEl = document.getElementById('bdtiVal').value;
+  const c2 = bdti !== null && bdti > 900;
+  setCheck('check2', 'dot2', 'stat2', c2,
+    bdti !== null ? (c2 ? `${bdti} ✓` : `${bdti} ✗`) : '— enter BDTI',
+    bdti === null);
+
+  // Check 3: Crack > $30
+  const c3 = crack !== null && crack > 30;
+  setCheck('check3', 'dot3', 'stat3', c3,
+    crack !== null ? (c3 ? `$${crack.toFixed(2)} ✓` : `$${crack.toFixed(2)} ✗`) : '— enter ULSD',
+    crack === null);
+
+  // Check 4: War risk elevated/withdrawn
+  const c4 = war === 'Elevated' || war === 'Withdrawn';
+  setCheck('check4', 'dot4', 'stat4', c4,
+    c4 ? `${war} ✓` : `${war} ✗`,
+    false);
+
+  score = [c1, c2, c3, c4].filter(Boolean).length;
+
+  // ── Score box ────────────────────────────────────
+  const scoreEl = document.getElementById('scoreNum');
+  scoreEl.textContent = score + '/4';
+  scoreEl.className = 'score-num score-' + score;
+  const scoreSubs = ['No signals active', 'One signal active — monitor', 'Two signals — investigate', 'Three signals — elevated risk', 'All signals active — high-confidence structural disruption'];
+  document.getElementById('scoreSub').textContent = scoreSubs[score];
+
+  // ── Alert banner ─────────────────────────────────
+  updateAlert(spread, score, spreadState);
+
+  // ── Spread interpretation table highlight ────────
+  updateInterpTable(spread);
+
+  // ── Timestamp ────────────────────────────────────
+  document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString('en-NZ', {dateStyle:'medium', timeStyle:'short'});
+  const dot = document.getElementById('saveDot');
+  dot.classList.add('show');
+  setTimeout(() => dot.classList.remove('show'), 1500);
+}
+
+function getSpreadState(spread) {
+  if (spread === null) return { cls: '', badge: '— enter prices above' };
+  if (spread >= 20) return { cls: 'state-regime',     badge: '🔴 REGIME CHANGE' };
+  if (spread >= 10) return { cls: 'state-strong',     badge: '🟠 STRONG SIGNAL' };
+  if (spread >= 5)  return { cls: 'state-meaningful', badge: '🟡 MEANINGFUL SIGNAL' };
+  if (spread >= 3)  return { cls: 'state-mild',       badge: '🔵 MILD DIVERGENCE' };
+  return               { cls: 'state-normal',          badge: '🟢 NORMAL' };
+}
+
+function setCheck(itemId, dotId, statId, isYes, statText, isUnknown) {
+  const item = document.getElementById(itemId);
+  const dot  = document.getElementById(dotId);
+  const stat = document.getElementById(statId);
+
+  if (isUnknown) {
+    item.className = 'check-item is-no';
+    dot.className  = 'check-dot check-unknown';
+    dot.textContent = '?';
+    stat.style.color = 'var(--muted)';
+  } else if (isYes) {
+    item.className = 'check-item is-yes';
+    dot.className  = 'check-dot check-yes';
+    dot.textContent = '✓';
+    stat.style.color = 'var(--green-txt)';
+  } else {
+    item.className = 'check-item is-no';
+    dot.className  = 'check-dot check-no';
+    dot.textContent = '✗';
+    stat.style.color = 'var(--red-txt)';
+  }
+  stat.textContent = statText;
+}
+
+function updateAlert(spread, score, spreadState) {
+  const banner    = document.getElementById('alertBanner');
+  const icon      = document.getElementById('alertIcon');
+  const title     = document.getElementById('alertTitle');
+  const body      = document.getElementById('alertBody');
+  const scorePill = document.getElementById('alertScorePill');
+
+  scorePill.textContent = score + '/4';
+
+  if (spread === null) {
+    banner.className = 'alert-banner alert-normal mb-24';
+    icon.textContent = 'ℹ️';
+    title.textContent = 'Enter prices above to calculate spread';
+    body.textContent  = 'Input Brent Spot and Brent Futures prices to activate signal tracking.';
+    return;
+  }
+
+  if (spread >= 20) {
+    banner.className = 'alert-banner alert-regime mb-24';
+    icon.textContent = '🔴';
+    title.textContent = 'REGIME CHANGE — Structural Supply Disruption';
+    body.textContent  = `Physical market pricing severe supply stress. Spread at $${spread.toFixed(2)} — unprecedented in ~40 years. ${score === 4 ? 'All four confirmation indicators active.' : score + '/4 confirmation indicators active.'}`;
+  } else if (spread >= 10) {
+    banner.className = 'alert-banner alert-strong mb-24';
+    icon.textContent = '🟠';
+    title.textContent = 'STRONG SIGNAL — Physical Stress Evident';
+    body.textContent  = `Spread at $${spread.toFixed(2)} — well above normal range. Physical market pricing supply stress. ${score + '/4 confirmation indicators active.'}`;
+  } else if (spread >= 5) {
+    banner.className = 'alert-banner alert-strong mb-24';
+    icon.textContent = '🟡';
+    title.textContent = 'MEANINGFUL SIGNAL — Investigate Confirming Indicators';
+    body.textContent  = `Spread at $${spread.toFixed(2)}. Meaningful divergence forming. Check BDTI, crack spread, and war risk status.`;
+  } else {
+    banner.className = 'alert-banner alert-normal mb-24';
+    icon.textContent = '🟢';
+    title.textContent = 'NORMAL — Markets Aligned';
+    body.textContent  = `Spread at $${spread.toFixed(2)}. Physical and paper markets within normal range. No structural disruption signal.`;
+  }
+}
+
+function updateInterpTable(spread) {
+  const rows = ['normal','mild','meaningful','strong','regime'];
+  const rowEls = document.querySelectorAll('.interp-table tr');
+  rowEls.forEach(r => r.classList.remove('row-current'));
+
+  if (spread === null) return;
+  let idx = 0;
+  if (spread >= 20) idx = 4;
+  else if (spread >= 10) idx = 3;
+  else if (spread >= 5)  idx = 2;
+  else if (spread >= 3)  idx = 1;
+  rowEls[idx].classList.add('row-current');
+
+  // Update last cell of current row to show live spread
+  const liveCell = rowEls[idx].querySelectorAll('td')[2];
+  if (liveCell) {
+    const orig = ['Markets aligned', 'Monitor closely', 'Investigate confirming indicators', 'Physical stress evident — begin positioning'];
+    liveCell.textContent = (idx === 4 ? `Structural supply disruption · Now: $${spread.toFixed(2)}` : orig[idx] + ` · Now: $${spread.toFixed(2)}`);
+  }
+}
+
+// ── Init on load ─────────────────────────────────
+window.addEventListener('DOMContentLoaded', recalcAll);
+</script>
+</body>
+</html>
