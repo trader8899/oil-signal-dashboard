@@ -559,12 +559,12 @@
     </div>
 
     <div class="settings-field">
-      <label>FMP API Key — Brent Futures (BZ=F)</label>
+      <label>Twelve Data API Key — Brent Futures (BZ=F)</label>
       <div class="field-row">
-        <input class="key-input" type="password" id="fmpKeyInput" placeholder="Your FMP API key">
-        <a class="reg-link" href="https://financialmodelingprep.com/register" target="_blank">Get free key ↗</a>
+        <input class="key-input" type="password" id="fmpKeyInput" placeholder="Your Twelve Data API key">
+        <a class="reg-link" href="https://twelvedata.com/register" target="_blank">Get free key ↗</a>
       </div>
-      <div style="font-size:0.68rem; color:var(--muted); margin-top:4px;">Fetches: ICE Brent front-month futures price · Free tier: 250 calls/day</div>
+      <div style="font-size:0.68rem; color:var(--muted); margin-top:4px;">Fetches: ICE Brent front-month futures price · Free tier: 800 calls/day</div>
     </div>
 
   </div>
@@ -624,7 +624,7 @@
     <div class="fetch-error" id="futErr"></div>
     <div class="card-sub">Paper market · ICE front-month</div>
     <div style="margin-top:10px">
-      <span class="pill pill-muted" style="font-size:0.65rem" id="futSourcePill">📈 BZ=F · FMP</span>
+      <span class="pill pill-muted" style="font-size:0.65rem" id="futSourcePill">📈 BZ=F · Twelve Data</span>
     </div>
   </div>
 
@@ -817,10 +817,10 @@
     <div style="color: var(--muted); font-size:0.7rem; font-family:var(--mono); margin-top:4px">Series: RBRTE · EER_EPD2DXL0_PF4_Y35NY_DPG</div>
   </div>
   <div class="card" style="font-size:0.8rem; line-height:1.8;">
-    <div class="card-label" style="margin-bottom:8px">FMP — Brent Futures BZ=F (Auto)</div>
-    <a href="https://financialmodelingprep.com/register" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">🔑 Register for free FMP key ↗</a>
-    <a href="https://financialmodelingprep.com/financial-summary/BZ=F" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">📈 FMP: BZ=F overview ↗</a>
-    <div style="color: var(--muted); font-size:0.72rem; margin-top:4px">ICE Brent front-month futures · 250 free calls/day</div>
+    <div class="card-label" style="margin-bottom:8px">Twelve Data — Brent Futures BZ=F (Auto)</div>
+    <a href="https://twelvedata.com/register" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">🔑 Register for free Twelve Data key ↗</a>
+    <a href="https://twelvedata.com/commodities" target="_blank" style="color: var(--green-txt); text-decoration:none; display:block">📈 Twelve Data commodities ↗</a>
+    <div style="color: var(--muted); font-size:0.72rem; margin-top:4px">ICE Brent front-month futures · 800 free calls/day</div>
   </div>
   <div class="card" style="font-size:0.8rem; line-height:1.8;">
     <div class="card-label" style="margin-bottom:8px">BDTI + War Risk (Manual)</div>
@@ -921,13 +921,12 @@ async function fetchAndCalc() {
 async function fetchBrentSpot(key) {
   clearStatus('spotErr', 'spotTs');
   try {
-    const url = `https://api.eia.gov/series/?api_key=${key}&series_id=RBRTE&num=1`;
+    const url = `https://api.eia.gov/v2/petroleum/pri/spt/data/?frequency=daily&data[0]=value&facets[series][]=RBRTE&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=1&api_key=${key}`;
     const res  = await fetch(url);
     const data = await res.json();
-    if (data.series?.[0]?.data?.[0]) {
-      const val  = parseFloat(data.series[0].data[0][1]);
-      const date = data.series[0].data[0][0];
-      const dateStr = date.slice(0,4)+'-'+date.slice(4,6)+'-'+date.slice(6,8);
+    if (data.response?.data?.[0]) {
+      const val     = parseFloat(data.response.data[0].value);
+      const dateStr = data.response.data[0].period;
       document.getElementById('brentSpot').value = val;
       document.getElementById('brentSpot').classList.add('fetched');
       document.getElementById('spotTs').textContent = `EIA data as of: ${dateStr}`;
@@ -943,13 +942,12 @@ async function fetchBrentSpot(key) {
 async function fetchULSD(key) {
   clearStatus('ulsdErr', 'ulsdTs');
   try {
-    const url = `https://api.eia.gov/series/?api_key=${key}&series_id=EER_EPD2DXL0_PF4_Y35NY_DPG&num=1`;
+    const url = `https://api.eia.gov/v2/petroleum/pri/spt/data/?frequency=daily&data[0]=value&facets[series][]=EER_EPD2DXL0_PF4_Y35NY_DPG&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=1&api_key=${key}`;
     const res  = await fetch(url);
     const data = await res.json();
-    if (data.series?.[0]?.data?.[0]) {
-      const val  = parseFloat(data.series[0].data[0][1]);
-      const date = data.series[0].data[0][0];
-      const dateStr = date.slice(0,4)+'-'+date.slice(4,6)+'-'+date.slice(6,8);
+    if (data.response?.data?.[0]) {
+      const val     = parseFloat(data.response.data[0].value);
+      const dateStr = data.response.data[0].period;
       document.getElementById('ulsdInput').value = val;
       document.getElementById('ulsdInput').classList.add('fetched');
       document.getElementById('ulsdTs').textContent = `EIA data as of: ${dateStr}`;
@@ -966,21 +964,20 @@ async function fetchULSD(key) {
 async function fetchFutures(key) {
   clearStatus('futErr', 'futTs');
   try {
-    const url = `https://financialmodelingprep.com/api/v3/quote/BZ=F?apikey=${key}`;
+    const url = `https://api.twelvedata.com/price?symbol=BZ%3DF&apikey=${key}`;
     const res  = await fetch(url);
     const data = await res.json();
-    if (Array.isArray(data) && data[0]?.price) {
-      const val = parseFloat(data[0].price);
-      const ts  = data[0].timestamp ? new Date(data[0].timestamp * 1000).toLocaleString('en-NZ', {dateStyle:'medium', timeStyle:'short'}) : 'now';
+    if (data.price) {
+      const val = parseFloat(data.price);
       document.getElementById('brentFutures').value = val;
       document.getElementById('brentFutures').classList.add('fetched');
-      document.getElementById('futTs').textContent = `FMP data as of: ${ts}`;
+      document.getElementById('futTs').textContent = `Twelve Data · fetched ${new Date().toLocaleString('en-NZ', {timeStyle:'short'})}`;
       document.getElementById('futBadge').style.display = 'inline-flex';
     } else {
-      showErr('futErr', 'FMP returned no data — check your key or try again');
+      showErr('futErr', 'Twelve Data: ' + (data.message || 'check your key'));
     }
   } catch(e) {
-    showErr('futErr', 'FMP fetch failed: ' + e.message);
+    showErr('futErr', 'Twelve Data fetch failed: ' + e.message);
   }
 }
 
