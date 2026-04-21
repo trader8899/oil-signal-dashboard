@@ -954,16 +954,12 @@ async function fetchAndCalc() {
   btn.disabled = true;
   icon.innerHTML = '<span class="spinner"></span>';
 
-  const eiaKey = localStorage.getItem('oilDash_eiaKey');
+  const eiaKey = getEiaKey();
   const fmpKey = localStorage.getItem('oilDash_fmpKey');
 
   const promises = [];
-  if (eiaKey) {
-    promises.push(fetchBrentSpot(eiaKey));
-    promises.push(fetchULSD(eiaKey));
-  } else {
-    showErr('spotErr', 'No EIA key — enter in ⚙️ API Keys');
-  }
+  promises.push(fetchBrentSpot(eiaKey));
+  promises.push(fetchULSD(eiaKey));
 
   await Promise.allSettled(promises);
 
@@ -1211,18 +1207,19 @@ function updateInterpTable(spread) {
   if (cell) cell.textContent = idx === 4 ? `Structural supply disruption · Now: $${spread.toFixed(2)}` : orig[idx] + ` · Now: $${spread.toFixed(2)}`;
 }
 
+// ── Default EIA key (works on any device, no setup needed) ──
+const DEFAULT_EIA_KEY = 'Ypvcpskb0fMhxBvivqilYzdRz5FrhSN5CbYbRC3D';
+function getEiaKey() {
+  return localStorage.getItem('oilDash_eiaKey') || DEFAULT_EIA_KEY;
+}
+
 // ── Init ─────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   updateSettingsBtn();
   loadFuturesTimestamp();
   loadBdtiTimestamp();
   // Auto-fetch on load if keys are already saved
-  const eiaKey = localStorage.getItem('oilDash_eiaKey');
-  if (eiaKey) {
-    fetchAndCalc();
-  } else {
-    recalcAll();
-  }
+  fetchAndCalc(); // always runs — default EIA key baked in
 });
 </script>
 </body>
