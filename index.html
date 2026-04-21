@@ -559,12 +559,13 @@
     </div>
 
     <div class="settings-field">
-      <label>Twelve Data API Key — Brent Futures (BZ=F)</label>
-      <div class="field-row">
-        <input class="key-input" type="password" id="fmpKeyInput" placeholder="Your Twelve Data API key">
-        <a class="reg-link" href="https://twelvedata.com/register" target="_blank">Get free key ↗</a>
+      <label style="color:var(--orange-txt);">Brent Futures — Manual Entry</label>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:4px; line-height:1.6;">
+        No free browser-accessible API exists for ICE Brent front-month futures in 2026.<br>
+        Enter the price manually each Monday from:<br>
+        <a href="https://www.tradingview.com/chart/?symbol=UKOIL" target="_blank" style="color:var(--green-txt); text-decoration:none;">TradingView: UKOIL ↗</a> &nbsp;·&nbsp;
+        <a href="https://www.barchart.com/futures/quotes/CB*0/overview" target="_blank" style="color:var(--green-txt); text-decoration:none;">Barchart: CB*0 ↗</a>
       </div>
-      <div style="font-size:0.68rem; color:var(--muted); margin-top:4px;">Fetches: ICE Brent front-month futures price · Free tier: 800 calls/day</div>
     </div>
 
   </div>
@@ -616,15 +617,33 @@
   <div class="card">
     <div class="card-label" style="display:flex; justify-content:space-between; align-items:center;">
       ICE Brent Futures $/bbl
-      <span class="auto-badge" id="futBadge" style="display:none">🤖 Auto</span>
+      <span style="font-size:0.65rem; color:var(--muted);">Manual</span>
     </div>
     <input class="editable-value" id="brentFutures" type="number" step="0.01"
-           placeholder="Enter manually or fetch →" value="109.00" oninput="recalcAll()">
+           placeholder="Enter from TradingView →" value="109.00" oninput="onFuturesInput()">
     <div class="fetch-ts" id="futTs"></div>
     <div class="fetch-error" id="futErr"></div>
     <div class="card-sub">Paper market · ICE front-month</div>
-    <div style="margin-top:10px">
-      <span class="pill pill-muted" style="font-size:0.65rem" id="futSourcePill">📈 BZ=F · Twelve Data</span>
+    <!-- Hotlinks -->
+    <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px;">
+      <a href="https://www.tradingview.com/chart/?symbol=UKOIL" target="_blank" rel="noopener"
+         style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border);
+                color:var(--text); text-decoration:none; border-radius:6px; padding:6px 10px; font-size:0.75rem; font-weight:600;
+                transition:border-color 0.15s, background 0.15s;"
+         onmouseover="this.style.borderColor='var(--muted)'; this.style.background='#222c3a'"
+         onmouseout="this.style.borderColor='var(--border)'; this.style.background='var(--surface2)'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        TradingView · UKOIL
+      </a>
+      <a href="https://www.barchart.com/futures/quotes/CB*0/overview" target="_blank" rel="noopener"
+         style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border);
+                color:var(--muted); text-decoration:none; border-radius:6px; padding:6px 10px; font-size:0.72rem;
+                transition:border-color 0.15s, background 0.15s;"
+         onmouseover="this.style.borderColor='var(--muted)'; this.style.background='#222c3a'"
+         onmouseout="this.style.borderColor='var(--border)'; this.style.background='var(--surface2)'">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        Barchart · ICE Brent CB*0
+      </a>
     </div>
   </div>
 
@@ -905,11 +924,6 @@ async function fetchAndCalc() {
   } else {
     showErr('spotErr', 'No EIA key — enter in ⚙️ API Keys');
   }
-  if (fmpKey) {
-    promises.push(fetchFutures(fmpKey));
-  } else {
-    showErr('futErr', 'No FMP key — enter in ⚙️ API Keys');
-  }
 
   await Promise.allSettled(promises);
 
@@ -985,6 +999,25 @@ function showErr(id, msg) { document.getElementById(id).textContent = '⚠ ' + m
 function clearStatus(errId, tsId) {
   document.getElementById(errId).textContent = '';
   document.getElementById(tsId).textContent = '';
+}
+
+// ── Futures manual-entry timestamp ──────────────────
+function onFuturesInput() {
+  recalcAll();
+  const now = new Date();
+  const ts  = now.toLocaleString('en-GB', {
+    weekday:'short', day:'numeric', month:'short',
+    hour:'2-digit', minute:'2-digit'
+  });
+  localStorage.setItem('oilDash_futTs', ts);
+  const el = document.getElementById('futTs');
+  if (el) el.textContent = `Last entered: ${ts}`;
+}
+
+function loadFuturesTimestamp() {
+  const ts = localStorage.getItem('oilDash_futTs');
+  const el = document.getElementById('futTs');
+  if (ts && el) el.textContent = `Last entered: ${ts}`;
 }
 
 // ── Recalculate (pure UI) ───────────────────────────
@@ -1122,10 +1155,10 @@ function updateInterpTable(spread) {
 // ── Init ─────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   updateSettingsBtn();
+  loadFuturesTimestamp();
   // Auto-fetch on load if keys are already saved
   const eiaKey = localStorage.getItem('oilDash_eiaKey');
-  const fmpKey = localStorage.getItem('oilDash_fmpKey');
-  if (eiaKey || fmpKey) {
+  if (eiaKey) {
     fetchAndCalc();
   } else {
     recalcAll();
