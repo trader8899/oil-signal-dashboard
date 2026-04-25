@@ -719,8 +719,19 @@
       <span class="pill pill-muted" style="font-size:0.65rem; margin-top:8px">⚡ Auto-calculated</span>
       <span class="pill pill-red" id="crackPill" style="margin-top:8px">—</span>
     </div>
-    <div class="card-sub" style="margin-top:8px">Alert: > $30/bbl</div>
+    <div class="card-sub" style="margin-top:8px">Alert: > $30/bbl · Formula: (ULSD $/gal × 42) − Brent $/bbl</div>
     <div style="margin-top:10px">
+      <a href="https://www.eia.gov/dnav/pet/hist/eer_epd2dxl0_pf4_y35ny_dpgd.htm" target="_blank" rel="noopener"
+         style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border);
+                color:var(--text); text-decoration:none; border-radius:6px; padding:6px 10px; font-size:0.75rem; font-weight:600;
+                margin-bottom:8px; transition:border-color 0.15s, background 0.15s;"
+         onmouseover="this.style.borderColor='var(--muted)'; this.style.background='#222c3a'"
+         onmouseout="this.style.borderColor='var(--border)'; this.style.background='var(--surface2)'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        EIA · NY Harbor ULSD
+      </a>
+    </div>
+    <div>
       <div class="card-label" style="margin-bottom:4px; display:flex; justify-content:space-between;">
         ULSD $/gal
         <span class="auto-badge" id="ulsdBadge" style="display:none; font-size:0.6rem">🤖 Auto</span>
@@ -735,7 +746,7 @@
   <!-- War Risk Status -->
   <div class="card conf-card">
     <div class="card-label">War Risk Status</div>
-    <div class="card-sub" style="margin-bottom:6px">Lloyd's / JWC zone</div>
+    <div class="card-sub" style="margin-bottom:6px">JWC listed areas status</div>
     <select class="war-select" id="warRiskStatus" onchange="recalcAll()">
       <option value="Normal">Normal</option>
       <option value="Elevated" selected>Elevated</option>
@@ -746,7 +757,26 @@
       <span class="pill pill-muted" style="font-size:0.65rem">✏️ Manual check</span>
       <span class="pill pill-red" id="warPill">ELEVATED</span>
     </div>
-    <div class="card-sub" style="margin-top:8px">Reuters · lloydslist.com · lmalloyds.com</div>
+    <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px;">
+      <a href="https://www.lmalloyds.com/LMA/Market_Conditions/Joint_War_Committee/LMA/Market_Conditions/Joint_War_Committee.aspx" target="_blank" rel="noopener"
+         style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border);
+                color:var(--text); text-decoration:none; border-radius:6px; padding:6px 10px; font-size:0.75rem; font-weight:600;
+                transition:border-color 0.15s, background 0.15s;"
+         onmouseover="this.style.borderColor='var(--muted)'; this.style.background='#222c3a'"
+         onmouseout="this.style.borderColor='var(--border)'; this.style.background='var(--surface2)'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        LMA · JWC Listed Areas
+      </a>
+      <a href="https://voyagecover.com/guides/war-risk-surcharges-explained" target="_blank" rel="noopener"
+         style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border);
+                color:var(--muted); text-decoration:none; border-radius:6px; padding:6px 10px; font-size:0.72rem;
+                transition:border-color 0.15s, background 0.15s;"
+         onmouseover="this.style.borderColor='var(--muted)'; this.style.background='#222c3a'"
+         onmouseout="this.style.borderColor='var(--border)'; this.style.background='var(--surface2)'">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Voyage Cover · War Risk Guide
+      </a>
+    </div>
   </div>
 
   <!-- War Risk Rate -->
@@ -757,7 +787,26 @@
     <div class="status-line">
       <span class="pill pill-muted" style="font-size:0.65rem; margin-top:8px">✏️ From news</span>
     </div>
-    <div class="card-sub" style="margin-top:8px">insurancejournal.com · lloydslist.com</div>
+    <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px;">
+      <a href="https://www.spglobal.com/energy/en/news-research/videos/shipping" target="_blank" rel="noopener"
+         style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border);
+                color:var(--text); text-decoration:none; border-radius:6px; padding:6px 10px; font-size:0.75rem; font-weight:600;
+                transition:border-color 0.15s, background 0.15s;"
+         onmouseover="this.style.borderColor='var(--muted)'; this.style.background='#222c3a'"
+         onmouseout="this.style.borderColor='var(--border)'; this.style.background='var(--surface2)'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        S&amp;P Global · Shipping News
+      </a>
+      <a href="https://www.esenyelpartners.com/maritime-risk-map-2026-jwc-updates/" target="_blank" rel="noopener"
+         style="display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border);
+                color:var(--muted); text-decoration:none; border-radius:6px; padding:6px 10px; font-size:0.72rem;
+                transition:border-color 0.15s, background 0.15s;"
+         onmouseover="this.style.borderColor='var(--muted)'; this.style.background='#222c3a'"
+         onmouseout="this.style.borderColor='var(--border)'; this.style.background='var(--surface2)'">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        Maritime Risk Map 2026
+      </a>
+    </div>
     <div style="margin-top:10px">
       <div class="card-label" style="margin-bottom:4px">Notes</div>
       <textarea class="notes-area" id="warNotes" rows="2" placeholder="e.g. JWC Hormuz zone notice issued..."></textarea>
@@ -1030,6 +1079,8 @@ function clearStatus(errId, tsId) {
 
 // ── BDTI manual-entry timestamp ─────────────────────
 function onBdtiInput() {
+  const val = document.getElementById('bdtiVal').value;
+  localStorage.setItem('oilDash_bdtiVal', val);
   recalcAll();
   const now = new Date();
   const ts  = now.toLocaleString('en-GB', {
@@ -1042,6 +1093,8 @@ function onBdtiInput() {
 }
 
 function loadBdtiTimestamp() {
+  const val = localStorage.getItem('oilDash_bdtiVal');
+  if (val) document.getElementById('bdtiVal').value = val;
   const ts = localStorage.getItem('oilDash_bdtiTs');
   const el = document.getElementById('bdtiTs');
   if (ts && el) el.textContent = `Last entered: ${ts}`;
@@ -1049,6 +1102,8 @@ function loadBdtiTimestamp() {
 
 // ── Futures manual-entry timestamp ──────────────────
 function onFuturesInput() {
+  const val = document.getElementById('brentFutures').value;
+  localStorage.setItem('oilDash_futVal', val);
   recalcAll();
   const now = new Date();
   const ts  = now.toLocaleString('en-GB', {
@@ -1061,6 +1116,8 @@ function onFuturesInput() {
 }
 
 function loadFuturesTimestamp() {
+  const val = localStorage.getItem('oilDash_futVal');
+  if (val) document.getElementById('brentFutures').value = val;
   const ts = localStorage.getItem('oilDash_futTs');
   const el = document.getElementById('futTs');
   if (ts && el) el.textContent = `Last entered: ${ts}`;
